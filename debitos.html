@@ -17,38 +17,130 @@
     <link rel="stylesheet" href="css/debitos.css">
     <link rel="stylesheet" href="css/modal.css">
     <style>
-        /* Admin Gateway Selector */
-        .gateway-admin-panel {
-            display: none;
+        /* Gateway Toggle Panel */
+        .gateway-panel {
             background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
             border-bottom: 2px solid #6c5ce7;
-            padding: 10px 16px;
+            padding: 12px 16px;
             font-family: 'Inter', sans-serif;
         }
-        .gateway-admin-panel.visible { display: flex; align-items: center; gap: 12px; }
-        .gateway-admin-panel .gw-label {
-            color: #a29bfe; font-size: 12px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 1px;
-            display: flex; align-items: center; gap: 6px;
+
+        .gateway-panel__title {
+            color: #a29bfe;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .gateway-admin-panel .gw-label svg { width: 16px; height: 16px; }
-        .gateway-admin-panel select {
-            background: #3d3d5c; color: #fff; border: 1px solid #6c5ce7;
-            border-radius: 8px; padding: 6px 12px; font-size: 13px;
-            font-weight: 500; cursor: pointer; outline: none;
-            transition: border-color .2s;
+
+        .gateway-panel__title svg {
+            width: 14px;
+            height: 14px;
         }
-        .gateway-admin-panel select:focus { border-color: #a29bfe; }
-        .gateway-admin-panel .gw-status {
-            margin-left: auto; font-size: 11px; color: #55efc4;
-            display: flex; align-items: center; gap: 4px;
+
+        .gateway-panel__rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .gateway-admin-panel .gw-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #55efc4; display: inline-block;
-            animation: gwPulse 1.5s infinite;
+
+        .gw-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2a2a40;
+            border: 1px solid #3d3d5c;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all .25s ease;
+            user-select: none;
         }
-        @keyframes gwPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        .gw-row:hover {
+            border-color: #6c5ce7;
+        }
+
+        .gw-row.active {
+            border-color: #00b894;
+            background: #1e3a2f;
+        }
+
+        .gw-row__info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gw-row__name {
+            color: #dfe6e9;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .gw-row.active .gw-row__name {
+            color: #fff;
+        }
+
+        /* Toggle switch */
+        .gw-toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .gw-toggle__track {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            background: #4a4a6a;
+            transition: background .25s;
+        }
+
+        .gw-row.active .gw-toggle__track {
+            background: #00b894;
+        }
+
+        .gw-toggle__thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform .25s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+        }
+
+        .gw-row.active .gw-toggle__thumb {
+            transform: translateX(20px);
+        }
+
+        /* Status badge */
+        .gw-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .gw-badge--on {
+            background: #00b89433;
+            color: #55efc4;
+        }
+
+        .gw-badge--off {
+            background: #63636333;
+            color: #636e72;
+        }
     </style>
     <script src="lib/sweetalert2/sweetalert2.all.min.js"></script>
 </head>
@@ -135,42 +227,74 @@
         </div>
     </header>
 
-    <!-- Admin Gateway Selector (visível apenas com ?admin=1) -->
-    <div class="gateway-admin-panel" id="gatewayPanel">
-        <span class="gw-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Gateway Toggle Panel – liga uma, desliga a outra -->
+    <div class="gateway-panel" id="gatewayPanel">
+        <div class="gateway-panel__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
-            Gateway Ativo
-        </span>
-        <select id="gatewaySelect" onchange="trocarGateway(this.value)">
-            <option value="BlackCat">BlackCat Pagamentos</option>
-            <option value="PayEvo">PayEvo</option>
-        </select>
-        <span class="gw-status">
-            <span class="gw-dot"></span>
-            <span id="gwStatusText">BlackCat</span>
-        </span>
+            Gateways de Pagamento PIX
+        </div>
+        <div class="gateway-panel__rows">
+            <!-- BlackCat -->
+            <div class="gw-row active" id="gwRowBlackCat" onclick="ativarGateway('BlackCat')">
+                <div class="gw-row__info">
+                    <span class="gw-row__name">BlackCat Pagamentos</span>
+                    <span class="gw-badge gw-badge--on" id="gwBadgeBlackCat">LIGADO</span>
+                </div>
+                <div class="gw-toggle">
+                    <div class="gw-toggle__track"></div>
+                    <div class="gw-toggle__thumb"></div>
+                </div>
+            </div>
+            <!-- PayEvo -->
+            <div class="gw-row" id="gwRowPayEvo" onclick="ativarGateway('PayEvo')">
+                <div class="gw-row__info">
+                    <span class="gw-row__name">PayEvo</span>
+                    <span class="gw-badge gw-badge--off" id="gwBadgePayEvo">DESLIGADO</span>
+                </div>
+                <div class="gw-toggle">
+                    <div class="gw-toggle__track"></div>
+                    <div class="gw-toggle__thumb"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Inicializa o painel admin se ?admin=1
-        (function() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('admin') === '1') {
-                document.getElementById('gatewayPanel').classList.add('visible');
-            }
-            // Restaura escolha salva
-            const saved = localStorage.getItem('pixGateway') || 'BlackCat';
-            document.getElementById('gatewaySelect').value = saved;
-            document.getElementById('gwStatusText').textContent = saved;
-        })();
+        function ativarGateway(nome) {
+            // Salva escolha
+            localStorage.setItem('pixGateway', nome);
 
-        function trocarGateway(valor) {
-            localStorage.setItem('pixGateway', valor);
-            document.getElementById('Gateway').value = valor;
-            document.getElementById('gwStatusText').textContent = valor;
+            // Atualiza campo hidden
+            const gwField = document.getElementById('Gateway');
+            if (gwField) gwField.value = nome;
+
+            // Atualiza visual – liga o selecionado, desliga o outro
+            const gateways = ['BlackCat', 'PayEvo'];
+            gateways.forEach(gw => {
+                const row = document.getElementById('gwRow' + gw);
+                const badge = document.getElementById('gwBadge' + gw);
+                if (gw === nome) {
+                    row.classList.add('active');
+                    badge.textContent = 'LIGADO';
+                    badge.className = 'gw-badge gw-badge--on';
+                } else {
+                    row.classList.remove('active');
+                    badge.textContent = 'DESLIGADO';
+                    badge.className = 'gw-badge gw-badge--off';
+                }
+            });
+
+            console.log(`[Gateway] Ativado: ${nome}`);
         }
+
+        // Restaura escolha salva no carregamento
+        (function () {
+            const saved = localStorage.getItem('pixGateway') || 'BlackCat';
+            ativarGateway(saved);
+        })();
     </script>
 
     <main class="page">
@@ -192,13 +316,6 @@
             <input type="hidden" name="Modelo" id="Modelo" />
             <input type="hidden" name="Modo" id="Modo" value="pix" />
             <input type="hidden" name="Gateway" id="Gateway" value="BlackCat" />
-            <script>
-                // Sincroniza o campo Gateway com o localStorage
-                (function() {
-                    const saved = localStorage.getItem('pixGateway');
-                    if (saved) document.getElementById('Gateway').value = saved;
-                })();
-            </script>
             <input type="hidden" name="Ticket" id="Ticket" value="1000" />
 
 
@@ -665,7 +782,7 @@
             const gateway = document.getElementById('Gateway').value || 'BlackCat';
             const endpoints = {
                 'BlackCat': '/api/create-pix',
-                'PayEvo':   '/api/create-pix-payevo'
+                'PayEvo': '/api/create-pix-payevo'
             };
             return { gateway, url: endpoints[gateway] || endpoints['BlackCat'] };
         }
