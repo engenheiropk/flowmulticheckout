@@ -16,6 +16,40 @@
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/debitos.css">
     <link rel="stylesheet" href="css/modal.css">
+    <style>
+        /* Admin Gateway Selector */
+        .gateway-admin-panel {
+            display: none;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-bottom: 2px solid #6c5ce7;
+            padding: 10px 16px;
+            font-family: 'Inter', sans-serif;
+        }
+        .gateway-admin-panel.visible { display: flex; align-items: center; gap: 12px; }
+        .gateway-admin-panel .gw-label {
+            color: #a29bfe; font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .gateway-admin-panel .gw-label svg { width: 16px; height: 16px; }
+        .gateway-admin-panel select {
+            background: #3d3d5c; color: #fff; border: 1px solid #6c5ce7;
+            border-radius: 8px; padding: 6px 12px; font-size: 13px;
+            font-weight: 500; cursor: pointer; outline: none;
+            transition: border-color .2s;
+        }
+        .gateway-admin-panel select:focus { border-color: #a29bfe; }
+        .gateway-admin-panel .gw-status {
+            margin-left: auto; font-size: 11px; color: #55efc4;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .gateway-admin-panel .gw-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #55efc4; display: inline-block;
+            animation: gwPulse 1.5s infinite;
+        }
+        @keyframes gwPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    </style>
     <script src="lib/sweetalert2/sweetalert2.all.min.js"></script>
 </head>
 
@@ -100,6 +134,45 @@
             <span class="appbar__spacer" aria-hidden="true"></span>
         </div>
     </header>
+
+    <!-- Admin Gateway Selector (visível apenas com ?admin=1) -->
+    <div class="gateway-admin-panel" id="gatewayPanel">
+        <span class="gw-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Gateway Ativo
+        </span>
+        <select id="gatewaySelect" onchange="trocarGateway(this.value)">
+            <option value="BlackCat">BlackCat Pagamentos</option>
+            <option value="PayEvo">PayEvo</option>
+        </select>
+        <span class="gw-status">
+            <span class="gw-dot"></span>
+            <span id="gwStatusText">BlackCat</span>
+        </span>
+    </div>
+
+    <script>
+        // Inicializa o painel admin se ?admin=1
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('admin') === '1') {
+                document.getElementById('gatewayPanel').classList.add('visible');
+            }
+            // Restaura escolha salva
+            const saved = localStorage.getItem('pixGateway') || 'BlackCat';
+            document.getElementById('gatewaySelect').value = saved;
+            document.getElementById('gwStatusText').textContent = saved;
+        })();
+
+        function trocarGateway(valor) {
+            localStorage.setItem('pixGateway', valor);
+            document.getElementById('Gateway').value = valor;
+            document.getElementById('gwStatusText').textContent = valor;
+        }
+    </script>
+
     <main class="page">
         <!-- HERO com imagem -->
         <section class="hero-strap">
@@ -119,6 +192,13 @@
             <input type="hidden" name="Modelo" id="Modelo" />
             <input type="hidden" name="Modo" id="Modo" value="pix" />
             <input type="hidden" name="Gateway" id="Gateway" value="BlackCat" />
+            <script>
+                // Sincroniza o campo Gateway com o localStorage
+                (function() {
+                    const saved = localStorage.getItem('pixGateway');
+                    if (saved) document.getElementById('Gateway').value = saved;
+                })();
+            </script>
             <input type="hidden" name="Ticket" id="Ticket" value="1000" />
 
 
@@ -578,8 +658,18 @@
         }
 
         /* ===============================
-        GERAR PIX via BlackCat API
+        GERAR PIX – Multi-Gateway
+        Suporta BlackCat e PayEvo
         ================================ */
+        function getGatewayEndpoint() {
+            const gateway = document.getElementById('Gateway').value || 'BlackCat';
+            const endpoints = {
+                'BlackCat': '/api/create-pix',
+                'PayEvo':   '/api/create-pix-payevo'
+            };
+            return { gateway, url: endpoints[gateway] || endpoints['BlackCat'] };
+        }
+
         async function chamarGeraPIX() {
 
             const texto = document.getElementById("pixTotal").textContent || "R$ 0,00";
@@ -611,8 +701,12 @@
             // Dados do cliente
             const placa = document.getElementById('Placa').value || 'PLACA';
 
+            // Determina qual gateway usar
+            const { gateway, url } = getGatewayEndpoint();
+            console.log(`[PIX] Usando gateway: ${gateway} → ${url}`);
+
             try {
-                const response = await fetch('/api/create-pix', {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -680,15 +774,15 @@
                     pixImg.style.display = "block";
                     qrLoader.style.display = "none";
 
-                    console.log('PIX gerado com sucesso:', data.data.transactionId);
+                    console.log(`[PIX] Gerado com sucesso via ${gateway}:`, data.data.transactionId);
                 } else {
                     throw new Error(data.message || 'Erro ao gerar PIX');
                 }
 
             } catch (error) {
-                console.error('Erro ao chamar API:', error);
+                console.error(`[PIX] Erro ao chamar API (${gateway}):`, error);
                 qrLoader.style.display = "none";
-                Swal.fire('Erro', 'Não foi possível gerar o PIX. Tente novamente.', 'error');
+                Swal.fire('Erro', `Não foi possível gerar o PIX via ${gateway}. Tente novamente.`, 'error');
             }
         }
     </script>
