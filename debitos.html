@@ -152,7 +152,7 @@
         <section class="container">
             <div class="section-bar">
                 <h2 class="section-title">Débitos</h2>
-                <time id="debitoCheckedAt" class="section-stamp" aria-live="polite">09/02/2026 - 12:01</time>
+                <time id="debitoCheckedAt" class="section-stamp" aria-live="polite">--/--/---- --:--</time>
             </div>
 
             <!-- Selecionar todos -->
@@ -421,12 +421,26 @@
             const pixTotal = document.getElementById("pixTotal");
 
             /* ======================
-               DATA DE VENCIMENTO DINÂMICA
+               DATA E HORA ATUAL DINÂMICA
             ====================== */
             const dataVencimentoEl = document.getElementById('dataVencimento');
+            const debitoCheckedAtEl = document.getElementById('debitoCheckedAt');
+            
+            const agora = new Date();
+            const dataFormatada = agora.toLocaleDateString('pt-BR');
+            const horaFormatada = agora.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            // Atualiza data de vencimento
             if (dataVencimentoEl) {
-                const hoje = new Date();
-                dataVencimentoEl.textContent = hoje.toLocaleDateString('pt-BR');
+                dataVencimentoEl.textContent = dataFormatada;
+            }
+            
+            // Atualiza timestamp da consulta
+            if (debitoCheckedAtEl) {
+                debitoCheckedAtEl.textContent = `${dataFormatada} - ${horaFormatada}`;
             }
 
             /* ======================
