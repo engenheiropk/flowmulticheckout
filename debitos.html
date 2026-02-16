@@ -68,6 +68,14 @@
             const agora = new Date();
             document.getElementById('modalDay').textContent = diasSemana[agora.getDay()];
             document.getElementById('modalTime').textContent = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
+            
+            // Atualiza data/hora da consulta de débitos
+            const debitoCheckedAtEl = document.getElementById('debitoCheckedAt');
+            if (debitoCheckedAtEl) {
+                const dataFormatada = agora.toLocaleDateString('pt-BR');
+                const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                debitoCheckedAtEl.textContent = `${dataFormatada} - ${horaFormatada}`;
+            }
 
             // Pega a placa da URL se existir
             const params = new URLSearchParams(window.location.search);
